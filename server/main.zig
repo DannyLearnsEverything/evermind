@@ -1,7 +1,14 @@
 const std = @import("std");
 const net = std.Io.net;
+const db = @import("db.zig");
 
 pub fn main(init: std.process.Init) !void {
+
+    // Initialize DB
+    var db_connection: db.Db = try .init("evermind.db");
+    defer db_connection.deinit();
+    try db_connection.exec(db.schema);
+
     const io = init.io;
 
     const addr = try net.IpAddress.parse("0.0.0.0", 8080);

@@ -12,13 +12,13 @@ pub fn build(b: *std.Build) void {
     });
 
     // ── Client (SDL3 + SDL_ttf GUI) ──────────────────────────────────────
-    const translate_c = b.addTranslateC(.{
+    const translate_client_c = b.addTranslateC(.{
         .root_source_file = b.path("client/c.h"),
         .target = target,
         .optimize = optimize,
     });
-    translate_c.linkSystemLibrary("SDL3", .{});
-    translate_c.linkSystemLibrary("SDL3_ttf", .{});
+    translate_client_c.linkSystemLibrary("SDL3", .{});
+    translate_client_c.linkSystemLibrary("SDL3_ttf", .{});
 
     const client = b.addExecutable(.{
         .name = "evermind",
@@ -27,7 +27,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "c", .module = translate_c.createModule() },
+                .{ .name = "c", .module = translate_client_c.createModule() },
                 .{ .name = "shared", .module = shared_mod },
             },
         }),
@@ -39,6 +39,13 @@ pub fn build(b: *std.Build) void {
     b.step("run", "Run the client").dependOn(&run_client.step);
 
     // ── Server (HTTP + SQLite — stub for now) ────────────────────────────
+    const translate_server_c = b.addTranslateC(.{
+        .root_source_file = b.path("server/c.h"),
+        .target = target,
+        .optimize = optimize,
+    });
+    translate_server_c.linkSystemLibrary("sqlite3", .{});
+
     const server = b.addExecutable(.{
         .name = "evermind-server",
         .root_module = b.createModule(.{
@@ -46,6 +53,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
+                .{ .name = "c", .module = translate_server_c.createModule() },
                 .{ .name = "shared", .module = shared_mod },
             },
         }),
@@ -63,7 +71,7 @@ pub fn build(b: *std.Build) void {
             .target = target,
             .optimize = optimize,
             .imports = &.{
-                .{ .name = "c", .module = translate_c.createModule() },
+                .{ .name = "c", .module = translate_client_c.createModule() },
                 .{ .name = "shared", .module = shared_mod },
             },
         }),
@@ -76,6 +84,7 @@ pub fn build(b: *std.Build) void {
             .optimize = optimize,
             .imports = &.{
                 .{ .name = "shared", .module = shared_mod },
+                .{ .name = "c", .module = translate_server_c.createModule() },
             },
         }),
     });
