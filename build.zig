@@ -4,7 +4,12 @@ pub fn build(b: *std.Build) void {
     const target = b.standardTargetOptions(.{});
     const optimize = b.standardOptimizeOption(.{});
 
-    // ── Shared module (imported by both client and server) ────────────────
+    const library_mod = b.createModule(.{
+        .root_source_file = b.path("library/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     const shared_mod = b.createModule(.{
         .root_source_file = b.path("shared/task.zig"),
         .target = target,
@@ -20,17 +25,19 @@ pub fn build(b: *std.Build) void {
     translate_client_c.linkSystemLibrary("SDL3", .{});
     translate_client_c.linkSystemLibrary("SDL3_ttf", .{});
 
+    const client_mod = b.createModule(.{
+        .root_source_file = b.path("client/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "c", .module = translate_client_c.createModule() },
+            .{ .name = "shared", .module = shared_mod },
+        },
+    });
+
     const client = b.addExecutable(.{
         .name = "evermind",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("client/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "c", .module = translate_client_c.createModule() },
-                .{ .name = "shared", .module = shared_mod },
-            },
-        }),
+        .root_module = client_mod,
     });
     b.installArtifact(client);
 
@@ -46,17 +53,20 @@ pub fn build(b: *std.Build) void {
     });
     translate_server_c.linkSystemLibrary("sqlite3", .{});
 
+    const server_mod = b.createModule(.{
+        .root_source_file = b.path("server/main.zig"),
+        .target = target,
+        .optimize = optimize,
+        .imports = &.{
+            .{ .name = "c", .module = translate_server_c.createModule() },
+            .{ .name = "shared", .module = shared_mod },
+            .{ .name = "library", .module = library_mod },
+        },
+    });
+
     const server = b.addExecutable(.{
         .name = "evermind-server",
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("server/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "c", .module = translate_server_c.createModule() },
-                .{ .name = "shared", .module = shared_mod },
-            },
-        }),
+        .root_module = server_mod,
     });
     b.installArtifact(server);
 
@@ -64,41 +74,9 @@ pub fn build(b: *std.Build) void {
     run_server.step.dependOn(b.getInstallStep());
     b.step("run-server", "Run the server").dependOn(&run_server.step);
 
-    // ── Tests ────────────────────────────────────────────────────────────
-    const client_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("client/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "c", .module = translate_client_c.createModule() },
-                .{ .name = "shared", .module = shared_mod },
-            },
-        }),
-    });
-
-    const server_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("server/main.zig"),
-            .target = target,
-            .optimize = optimize,
-            .imports = &.{
-                .{ .name = "shared", .module = shared_mod },
-                .{ .name = "c", .module = translate_server_c.createModule() },
-            },
-        }),
-    });
-
-    const shared_tests = b.addTest(.{
-        .root_module = b.createModule(.{
-            .root_source_file = b.path("shared/task.zig"),
-            .target = target,
-            .optimize = optimize,
-        }),
-    });
-
     const test_step = b.step("test", "Run all tests");
-    test_step.dependOn(&b.addRunArtifact(client_tests).step);
-    test_step.dependOn(&b.addRunArtifact(server_tests).step);
-    test_step.dependOn(&b.addRunArtifact(shared_tests).step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = library_mod })).step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = client_mod })).step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = server_mod })).step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = shared_mod })).step);
 }
