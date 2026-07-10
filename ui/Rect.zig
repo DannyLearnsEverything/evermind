@@ -6,7 +6,7 @@ y: f32,
 w: f32,
 h: f32,
 
-const Split = struct {
+pub const Split = struct {
     rect: Rect,
     rest: Rect,
     fn swap(self: Split) Split {
