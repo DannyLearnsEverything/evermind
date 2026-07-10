@@ -26,7 +26,7 @@ fn transpose(self: Rect) Rect {
     };
 }
 
-fn top(self: Rect, px: f32) Split {
+pub fn top(self: Rect, px: f32) Split {
     std.debug.assert(px > 0);
     std.debug.assert(px < self.h);
 
@@ -54,11 +54,11 @@ fn top(self: Rect, px: f32) Split {
     };
 }
 
-fn bottom(self: Rect, px: f32) Split {
+pub fn bottom(self: Rect, px: f32) Split {
     return self.top(self.h - px).swap();
 }
 
-fn left(self: Rect, px: f32) Split {
+pub fn left(self: Rect, px: f32) Split {
     const split = self.transpose().top(px);
     return .{
         .rect = split.rect.transpose(),
@@ -66,11 +66,11 @@ fn left(self: Rect, px: f32) Split {
     };
 }
 
-fn right(self: Rect, px: f32) Split {
+pub fn right(self: Rect, px: f32) Split {
     return self.left(self.w - px).swap();
 }
 
-fn inset(self: Rect, px: f32) Rect {
+pub fn inset(self: Rect, px: f32) Rect {
     return .{
         .x = self.x + px,
         .y = self.y + px,
