@@ -52,5 +52,5 @@ test "UUIDV4 Generation" {
     const random = rand_implementation.random();
     const gen: UuidGenerator = .init(random);
     const id = gen.v4();
-    try std.testing.expectEqualStrings("df230b49-615d-4753-c7d5-80c33d6fda61", &id);
+    try std.testing.expectEqualStrings("df230b49-615d-4753-87d5-80c33d6fda61", &id);
 }

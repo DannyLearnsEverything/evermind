@@ -1,6 +1,7 @@
 const std = @import("std");
 const net = std.Io.net;
 const db = @import("db.zig");
+const store = @import("store.zig");
 
 pub fn main(init: std.process.Init) !void {
 
@@ -49,4 +50,9 @@ fn handleConnection(io: std.Io, stream: net.Stream) void {
             .value = "text/html",
         }},
     }) catch return;
+}
+
+test {
+    _ = db;
+    _ = store;
 }

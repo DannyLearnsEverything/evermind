@@ -16,6 +16,12 @@ pub fn build(b: *std.Build) void {
         .optimize = optimize,
     });
 
+    const ui_mod = b.createModule(.{
+        .root_source_file = b.path("ui/root.zig"),
+        .target = target,
+        .optimize = optimize,
+    });
+
     // ── Client (SDL3 + SDL_ttf GUI) ──────────────────────────────────────
     const translate_client_c = b.addTranslateC(.{
         .root_source_file = b.path("client/c.h"),
@@ -32,6 +38,7 @@ pub fn build(b: *std.Build) void {
         .imports = &.{
             .{ .name = "c", .module = translate_client_c.createModule() },
             .{ .name = "shared", .module = shared_mod },
+            .{ .name = "ui", .module = ui_mod },
         },
     });
 
@@ -79,4 +86,5 @@ pub fn build(b: *std.Build) void {
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = client_mod })).step);
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = server_mod })).step);
     test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = shared_mod })).step);
+    test_step.dependOn(&b.addRunArtifact(b.addTest(.{ .root_module = ui_mod })).step);
 }
